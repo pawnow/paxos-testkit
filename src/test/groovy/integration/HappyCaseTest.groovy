@@ -23,8 +23,9 @@ public class HappyCaseTest extends Specification{
         NodesProvider.getListOfApplicationNodes()
                 .stream()
                 .forEach({
-                        node -> restTemplate.postForEntity(node.getNodeUrl()+ApplicationEndpoints.ONLINE_URL, params, String.class)
-                })
+            node -> restTemplate.postForEntity(node.getNodeUrl()+ApplicationEndpoints.ONLINE_URL, params, String.class)
+                restTemplate.exchange(node.getNodeUrl()+ApplicationEndpoints.CLEANER_URL, HttpMethod.GET, new HttpEntity<>(), String.class)
+        })
     }
 
 
@@ -41,7 +42,6 @@ public class HappyCaseTest extends Specification{
         when: 'rest propose url is hit'
         HttpEntity<String> proposal = restTemplate.postForEntity(node.getNodeUrl()+ ApplicationEndpoints.CLIENT_PROPOSE_URL, proposalParams, String.class);
         HttpEntity<String> result = restTemplate.postForEntity(node.getNodeUrl()+ApplicationEndpoints.CLIENT_RETRIEVE_URL, retrievalParams, String.class);
-        HttpEntity<String> cleanFirst = restTemplate.exchange(node.getNodeUrl()+ApplicationEndpoints.CLEANER_URL, HttpMethod.GET, entity, String.class);
 
         then: 'client should recieve proper value'
         proposal.statusCode == HttpStatus.OK
@@ -71,8 +71,6 @@ public class HappyCaseTest extends Specification{
         HttpEntity<String> resultFirst = restTemplate.postForEntity(second.getNodeUrl()+ApplicationEndpoints.CLIENT_RETRIEVE_URL, retrievalParamsFirst, String.class);
         HttpEntity<String> proposalSecond = restTemplate.postForEntity(second.getNodeUrl()+ ApplicationEndpoints.CLIENT_PROPOSE_URL, proposalParamsSecond, String.class);
         HttpEntity<String> resultSecond = restTemplate.postForEntity(first.getNodeUrl()+ApplicationEndpoints.CLIENT_RETRIEVE_URL, retrievalParamsSecond, String.class);
-        HttpEntity<String> cleanFirst = restTemplate.exchange(first.getNodeUrl()+ApplicationEndpoints.CLEANER_URL, HttpMethod.GET, entity, String.class);
-        HttpEntity<String> cleanSecond = restTemplate.exchange(second.getNodeUrl()+ApplicationEndpoints.CLEANER_URL, HttpMethod.GET, entity, String.class);
 
         then: 'both clients should recieve proper values'
         proposalFirst.statusCode == HttpStatus.OK
