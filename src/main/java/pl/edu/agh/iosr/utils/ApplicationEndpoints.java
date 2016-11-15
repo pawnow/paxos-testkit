@@ -9,7 +9,10 @@ public enum ApplicationEndpoints {
     STATUS_URL("/utils/status"),
     LEADER_URL("/utils/leader"),
     PROPOSER_PROPOSE_URL("/proposer/propose"),
-    PROPOSER_ACCEPT_URL("/proposer/accept");
+    PROPOSER_ACCEPT_URL("/proposer/accept"),
+    CLIENT_PROPOSE_URL("client/propose"),
+    CLIENT_RETRIEVE_URL("client/retrieve"),
+    CLEANER_URL("cleaner/clean");
 
     private final String endpoint;
 
