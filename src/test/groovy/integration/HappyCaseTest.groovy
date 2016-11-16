@@ -82,4 +82,35 @@ public class HappyCaseTest extends Specification{
 
     }
 
+    def shouldIgnoreDuplicateKeyCalls() {
+        given:
+        HttpEntity<?> entity = new HttpEntity<>()
+        Node first = NodesProvider.get(0)
+        Node second = NodesProvider.get(1)
+        MultiValueMap<String, String> proposalParamsFirst = new LinkedMultiValueMap<String, String>()
+        proposalParamsFirst.add("key", "testkey")
+        proposalParamsFirst.add("value", "5")
+        MultiValueMap<String, String> retrievalParamsFirst = new LinkedMultiValueMap<String, String>()
+        retrievalParamsFirst.add("key", "testkey")
+        MultiValueMap<String, String> proposalParamsSecond = new LinkedMultiValueMap<String, String>()
+        proposalParamsSecond.add("key", "testkey")
+        proposalParamsSecond.add("value", "7")
+
+
+        when: 'rest propose for both requests url is hit'
+        HttpEntity<String> proposalFirst = restTemplate.postForEntity(first.getNodeUrl()+ ApplicationEndpoints.CLIENT_PROPOSE_URL, proposalParamsFirst, String.class);
+        HttpEntity<String> resultFirst = restTemplate.postForEntity(second.getNodeUrl()+ApplicationEndpoints.CLIENT_RETRIEVE_URL, retrievalParamsFirst, String.class);
+        HttpEntity<String> proposalSecond = restTemplate.postForEntity(second.getNodeUrl()+ ApplicationEndpoints.CLIENT_PROPOSE_URL, proposalParamsSecond, String.class);
+        HttpEntity<String> resultSecond = restTemplate.postForEntity(first.getNodeUrl()+ApplicationEndpoints.CLIENT_RETRIEVE_URL, retrievalParamsFirst, String.class);
+
+        then: 'client should receive first value both times'
+        proposalFirst.statusCode == HttpStatus.OK
+        resultFirst.statusCode == HttpStatus.OK
+        resultFirst.body == "5"
+        proposalSecond.statusCode == HttpStatus.OK
+        proposalSecond.statusCode == HttpStatus.OK
+        resultSecond.body == "5"
+
+    }
+
 }
