@@ -13,7 +13,7 @@ import pl.edu.agh.iosr.utils.ApplicationEndpoints
 import pl.edu.agh.iosr.utils.NodesProvider
 import spock.lang.Specification
 
-class Presentation extends Specification{
+class Presentation extends Specification {
 
     def RestTemplate restTemplate = new RestTemplate()
     def Node first
@@ -26,7 +26,7 @@ class Presentation extends Specification{
         NodesProvider.getListOfApplicationNodes()
                 .stream()
                 .forEach({
-            node -> restTemplate.postForEntity(node.getNodeUrl()+ApplicationEndpoints.ONLINE_URL, params, String.class)
+            node -> restTemplate.postForEntity(node.getNodeUrl() + ApplicationEndpoints.ONLINE_URL, params, String.class)
         })
 
         first = NodesProvider.get(0);
@@ -35,7 +35,7 @@ class Presentation extends Specification{
     }
 
 
-    def testBasicPaxos(){
+    def testBasicPaxosLearnOneValue() {
 /*        Client   Proposer      Acceptor     Learner
         |         |          |  |  |       |  |
         X-------->|          |  |  |       |  |  Request
@@ -46,42 +46,98 @@ class Presentation extends Specification{
         |<---------------------------------X--X  Response
         |         |          |  |  |       |  |*/
 
-        //lag jak 2 razy wyslemy ten sam key
         given:
         HttpEntity<?> entity = new HttpEntity<>();
-        Long value = 123l;
-        String params = "?key=abcd&value="+value
-        String url = first.getNodeUrl()+ApplicationEndpoints.CLIENT_PROPOSE_URL+params;
+        Random r = new Random();
+        Integer value = r.nextInt();
+        Long valueLong = value;
+        String key = "abck"+r.nextInt()
+        String params = "?key="+key+"&value=" + value
+        String url = first.getNodeUrl() + ApplicationEndpoints.CLIENT_PROPOSE_URL + params;
 
         when:
         Proposal response = restTemplate.getForObject(url, Proposal.class);
 
         then:
         //retrieve
-        String queryUrl = first.getNodeUrl()+ApplicationEndpoints.CLIENT_RETRIEVE_URL+params;
+        String queryUrl = first.getNodeUrl() + ApplicationEndpoints.CLIENT_RETRIEVE_URL + params;
         Integer responseValue = restTemplate.getForObject(queryUrl, Integer.class);
-        responseValue == value
+        responseValue == valueLong
 
         //check learners
-        AcceptedProposal firstNodeProposal = restTemplate.getForObject(first.getNodeUrl()+ApplicationEndpoints.LERNER_URL+"/abcd", AcceptedProposal.class);
-        firstNodeProposal.getValue() == value
-        AcceptedProposal secondNodeProposal = restTemplate.getForObject(second.getNodeUrl()+ApplicationEndpoints.LERNER_URL+"/abcd", AcceptedProposal.class);
-        secondNodeProposal.getValue() == value
-        AcceptedProposal thirdNodeProposal = restTemplate.getForObject(first.getNodeUrl()+ApplicationEndpoints.LERNER_URL+"/abcd", AcceptedProposal.class);
-        thirdNodeProposal.getValue() == value
-
+        AcceptedProposal firstNodeProposal = restTemplate.getForObject(first.getNodeUrl() + ApplicationEndpoints.LERNER_URL + "/"+key, AcceptedProposal.class);
+        firstNodeProposal.getValue() == valueLong
+        AcceptedProposal secondNodeProposal = restTemplate.getForObject(second.getNodeUrl() + ApplicationEndpoints.LERNER_URL + "/"+key, AcceptedProposal.class);
+        secondNodeProposal.getValue() == valueLong
+        AcceptedProposal thirdNodeProposal = restTemplate.getForObject(third.getNodeUrl() + ApplicationEndpoints.LERNER_URL + "/"+key, AcceptedProposal.class);
+        thirdNodeProposal.getValue() == valueLong
 
     }
-    def testShouldEveryNodeLearnValue() {
-/*        given:
-;
+
+
+    def testNodeNotLeaderFailure() {
+
+        given:
         HttpEntity<?> entity = new HttpEntity<>();
+        Random r = new Random();
+        Integer value = r.nextInt();
+        Long valueLong = value;
+        String key = "abck"+r.nextInt()
+        String params = "?key="+key+"&value=" + value
+        String url = first.getNodeUrl() + ApplicationEndpoints.CLIENT_PROPOSE_URL + params;
+        MultiValueMap<String, String> paramsMap = new LinkedMultiValueMap<String, String>();
 
-        //check if leader
 
-        //Proposal response = restTemplate.getForObject(url, Proposal.class);*/
+        when:
+        HttpEntity<String> responseTurnOffline = restTemplate.postForEntity(third.getNodeUrl()+ApplicationEndpoints.OFFLINE_URL, paramsMap, String.class);
+        Proposal response = restTemplate.getForObject(url, Proposal.class);
+
+        then:
+        //retrieve
+        String queryUrl = first.getNodeUrl() + ApplicationEndpoints.CLIENT_RETRIEVE_URL + params;
+        Integer responseValue = restTemplate.getForObject(queryUrl, Integer.class);
+        responseValue == valueLong
+
+        //check learners
+        AcceptedProposal firstNodeProposal = restTemplate.getForObject(first.getNodeUrl() + ApplicationEndpoints.LERNER_URL + "/"+key, AcceptedProposal.class);
+        firstNodeProposal.getValue() == valueLong
+        AcceptedProposal secondNodeProposal = restTemplate.getForObject(second.getNodeUrl() + ApplicationEndpoints.LERNER_URL + "/"+key, AcceptedProposal.class);
+        secondNodeProposal.getValue() == valueLong
+      //  AcceptedProposal thirdNodeProposal = restTemplate.getForObject(first.getNodeUrl() + ApplicationEndpoints.LERNER_URL + "/"+key, AcceptedProposal.class);
+        //thirdNodeProposal.getValue() == valueLong/
 
     }
 
+    def testLeaderFailure() {
 
+        given:
+        HttpEntity<?> entity = new HttpEntity<>();
+        Random r = new Random();
+        Integer value = r.nextInt();
+        Long valueLong = value;
+        String key = "abck"+r.nextInt()
+        String params = "?key="+key+"&value=" + value
+        String url = second.getNodeUrl() + ApplicationEndpoints.CLIENT_PROPOSE_URL + params;
+        MultiValueMap<String, String> paramsMap = new LinkedMultiValueMap<String, String>();
+
+
+        when:
+        HttpEntity<String> responseTurnOffline = restTemplate.postForEntity(first.getNodeUrl()+ApplicationEndpoints.OFFLINE_URL, paramsMap, String.class);
+        Proposal response = restTemplate.getForObject(url, Proposal.class);
+
+        then:
+        //retrieve
+        String queryUrl = second.getNodeUrl() + ApplicationEndpoints.CLIENT_RETRIEVE_URL + params;
+        Integer responseValue = restTemplate.getForObject(queryUrl, Integer.class);
+        responseValue == valueLong
+
+        //check learners
+        //AcceptedProposal firstNodeProposal = restTemplate.getForObject(first.getNodeUrl() + ApplicationEndpoints.LERNER_URL + "/"+key, AcceptedProposal.class);
+        //firstNodeProposal.getValue() == valueLong
+        AcceptedProposal secondNodeProposal = restTemplate.getForObject(second.getNodeUrl() + ApplicationEndpoints.LERNER_URL + "/"+key, AcceptedProposal.class);
+        secondNodeProposal.getValue() == valueLong
+        AcceptedProposal thirdNodeProposal = restTemplate.getForObject(third.getNodeUrl() + ApplicationEndpoints.LERNER_URL + "/"+key, AcceptedProposal.class);
+        thirdNodeProposal.getValue() == valueLong
+
+    }
 }
