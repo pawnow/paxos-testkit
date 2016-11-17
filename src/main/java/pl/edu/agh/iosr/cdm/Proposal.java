@@ -13,12 +13,12 @@ public class Proposal {
     private String key;
     private Integer value;
     private String server;
-    private Integer highestAcceptedProposalId;
+    private Long highestAcceptedProposalId;
 
     public Proposal() {
     }
 
-    public Proposal(Long id, String key, Integer value, String server, Integer highestAcceptedProposalId) {
+    public Proposal(Long id, String key, Integer value, String server, Long highestAcceptedProposalId) {
         this.id = id;
         this.key = key;
         this.value = value;
