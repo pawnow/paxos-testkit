@@ -13,7 +13,7 @@ import pl.edu.agh.iosr.utils.ApplicationEndpoints
 import pl.edu.agh.iosr.utils.NodesProvider
 import spock.lang.Specification
 
-class Presentation extends Specification {
+class PresentationTest extends Specification {
 
     def RestTemplate restTemplate = new RestTemplate()
     def Node first
